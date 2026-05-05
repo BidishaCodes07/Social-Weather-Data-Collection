@@ -1,0 +1,1623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Social Weather</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F7F4EE;
+    --surface: #FFFFFF;
+    --surface2: #F0EDE6;
+    --ink: #1A1814;
+    --ink2: #6B6860;
+    --ink3: #A09D98;
+    --accent: #2D5A8E;
+    --accent-soft: #E8EFF8;
+    --warm: #C4622D;
+    --warm-soft: #FAF0EA;
+    --green: #2D6B4A;
+    --green-soft: #E8F4EE;
+    --border: rgba(26,24,20,0.1);
+    --border-strong: rgba(26,24,20,0.2);
+    --radius: 12px;
+    --radius-sm: 8px;
+    --serif: 'DM Serif Display', Georgia, serif;
+    --sans: 'DM Sans', system-ui, sans-serif;
+    --transition: 0.25s ease;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--ink);
+    min-height: 100vh;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  /* ─── LAYOUT ─── */
+  #app {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem 4rem;
+    min-height: 100vh;
+  }
+
+  .screen { display: none; }
+  .screen.active { display: block; animation: fadeIn 0.35s ease forwards; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ─── TYPOGRAPHY ─── */
+  .display {
+    font-family: var(--serif);
+    font-size: 2.8rem;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+  }
+
+  .display em {
+    font-style: italic;
+    color: var(--accent);
+  }
+
+  h2 {
+    font-family: var(--serif);
+    font-size: 1.7rem;
+    font-weight: 400;
+    line-height: 1.25;
+    margin-bottom: 0.75rem;
+  }
+
+  h3 {
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink3);
+    margin-bottom: 0.5rem;
+  }
+
+  p { color: var(--ink2); line-height: 1.7; }
+
+  /* ─── CARDS ─── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .card-accent {
+    border-left: 3px solid var(--accent);
+    padding-left: 1.25rem;
+  }
+
+  .scene-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 2rem;
+    margin: 1.5rem 0;
+    position: relative;
+  }
+
+  .scene-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--warm));
+    border-radius: var(--radius) var(--radius) 0 0;
+  }
+
+  .scene-text {
+    font-family: var(--serif);
+    font-size: 1.15rem;
+    line-height: 1.65;
+    color: var(--ink);
+    font-style: italic;
+  }
+
+  /* ─── PROGRESS ─── */
+  .progress-bar {
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    margin-bottom: 2.5rem;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+    transition: width 0.5s ease;
+  }
+
+  .stage-dots {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 2rem;
+  }
+
+  .stage-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--border-strong);
+    transition: background 0.3s;
+  }
+  .stage-dot.active { background: var(--accent); }
+  .stage-dot.done { background: var(--accent); opacity: 0.4; }
+
+  /* ─── SLIDERS ─── */
+  .slider-wrap {
+    margin: 1rem 0;
+  }
+
+  .slider-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--ink3);
+    margin-bottom: 0.5rem;
+  }
+
+  input[type=range] {
+    width: 100%;
+    height: 4px;
+    -webkit-appearance: none;
+    background: var(--border);
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+  }
+
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px; height: 20px;
+    background: var(--accent);
+    border-radius: 50%;
+    cursor: pointer;
+    transition: transform 0.15s;
+    box-shadow: 0 2px 8px rgba(45,90,142,0.3);
+  }
+
+  input[type=range]::-webkit-slider-thumb:hover {
+    transform: scale(1.15);
+  }
+
+  .slider-value {
+    text-align: center;
+    font-family: var(--serif);
+    font-size: 2rem;
+    color: var(--accent);
+    margin-top: 0.75rem;
+    font-weight: 400;
+  }
+
+  /* ─── OPTIONS ─── */
+  .options { display: flex; flex-direction: column; gap: 8px; }
+
+  .option {
+    padding: 0.9rem 1.1rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all var(--transition);
+    font-size: 14px;
+    color: var(--ink);
+    background: var(--surface);
+    text-align: left;
+    line-height: 1.4;
+  }
+
+  .option:hover {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+
+  .option.selected {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-weight: 500;
+  }
+
+  /* ─── TEXTAREA ─── */
+  textarea {
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 1rem;
+    font-family: var(--sans);
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--ink);
+    background: var(--surface);
+    resize: vertical;
+    min-height: 100px;
+    outline: none;
+    transition: border-color var(--transition);
+  }
+
+  textarea:focus { border-color: var(--accent); }
+  textarea::placeholder { color: var(--ink3); }
+
+  /* ─── BUTTONS ─── */
+  .btn {
+    padding: 0.8rem 1.75rem;
+    border-radius: var(--radius-sm);
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition);
+    border: 1px solid transparent;
+    display: inline-block;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+
+  .btn-primary:hover { background: #1e4a7a; }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--ink2);
+    border-color: var(--border-strong);
+  }
+
+  .btn-ghost:hover { background: var(--surface2); }
+
+  /* ─── WEATHER DISPLAY ─── */
+  .weather-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 10px;
+    margin: 1rem 0;
+  }
+
+  .weather-item {
+    background: var(--surface2);
+    border-radius: var(--radius-sm);
+    padding: 0.85rem 1rem;
+    text-align: center;
+  }
+
+  .weather-item .label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink3);
+    margin-bottom: 0.3rem;
+  }
+
+  .weather-item .val {
+    font-family: var(--serif);
+    font-size: 1.5rem;
+    color: var(--ink);
+  }
+
+  .weather-item .change {
+    font-size: 11px;
+    margin-top: 2px;
+  }
+
+  .change.up { color: var(--warm); }
+  .change.down { color: var(--green); }
+  .change.neutral { color: var(--ink3); }
+
+  /* ─── OUTCOME ─── */
+  .outcome-reveal {
+    background: var(--accent-soft);
+    border: 1px solid rgba(45,90,142,0.2);
+    border-radius: var(--radius);
+    padding: 1.25rem 1.5rem;
+    margin: 1rem 0;
+  }
+
+  .outcome-reveal p {
+    color: var(--ink);
+    font-style: italic;
+  }
+
+  /* ─── ONBOARDING ─── */
+  .hero-meta {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--ink3);
+    margin-bottom: 1rem;
+  }
+
+  .trait-question {
+    margin-bottom: 1.25rem;
+  }
+
+  .trait-question label {
+    display: block;
+    font-size: 13px;
+    color: var(--ink2);
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+  }
+
+  /* ─── SUMMARY ─── */
+  .summary-stat {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 0.65rem 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+  }
+
+  .summary-stat:last-child { border-bottom: none; }
+
+  .summary-stat .key { color: var(--ink2); }
+
+  .summary-stat .val {
+    font-family: var(--serif);
+    font-size: 1.1rem;
+    color: var(--ink);
+  }
+
+  .badge {
+    display: inline-block;
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 20px;
+    font-weight: 500;
+  }
+
+  .badge-warm { background: var(--warm-soft); color: var(--warm); }
+  .badge-cool { background: var(--green-soft); color: var(--green); }
+  .badge-neutral { background: var(--surface2); color: var(--ink2); }
+
+  .data-note {
+    font-size: 12px;
+    color: var(--ink3);
+    border-top: 1px solid var(--border);
+    padding-top: 1rem;
+    margin-top: 1rem;
+  }
+
+  /* ─── SPLIT COMPARISON ─── */
+  .compare-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin: 1rem 0;
+  }
+
+  .compare-col {
+    background: var(--surface2);
+    border-radius: var(--radius-sm);
+    padding: 1rem;
+  }
+
+  .compare-col h3 { margin-bottom: 0.75rem; }
+
+  /* ─── LOADING ─── */
+  .loading-dots span {
+    display: inline-block;
+    width: 6px; height: 6px;
+    background: var(--accent);
+    border-radius: 50%;
+    margin: 0 2px;
+    animation: bounce 1.2s infinite;
+  }
+
+  .loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes bounce {
+    0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+    40% { transform: scale(1); opacity: 1; }
+  }
+
+  /* ─── SPACERS ─── */
+  .spacer { height: 1.5rem; }
+  .spacer-sm { height: 0.75rem; }
+
+  /* ─── FOOTER NAV ─── */
+  .nav-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 2rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .scene-counter {
+    font-size: 12px;
+    color: var(--ink3);
+    letter-spacing: 0.05em;
+  }
+
+  /* ─── CHART ─── */
+  .mini-chart {
+    height: 80px;
+    display: flex;
+    align-items: flex-end;
+    gap: 6px;
+    padding: 0 4px;
+  }
+
+  .chart-bar {
+    flex: 1;
+    border-radius: 3px 3px 0 0;
+    background: var(--accent-soft);
+    border: 1px solid rgba(45,90,142,0.2);
+    transition: height 0.5s ease;
+    position: relative;
+    min-height: 4px;
+  }
+
+  .chart-bar.current { background: var(--accent); border-color: var(--accent); }
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ══════════════════════════════════════════════════
+     SCREEN 0: Welcome
+══════════════════════════════════════════════════ -->
+<div id="screen-welcome" class="screen active">
+  <div class="hero-meta">An emotional dynamics study</div>
+  <div class="display">Social<br><em>Weather</em></div>
+  <div class="spacer"></div>
+  <p>You'll move through a series of everyday social moments — a message that goes unanswered, a vague comment from a supervisor, a friend who seems distant.</p>
+  <div class="spacer-sm"></div>
+  <p>There are no right answers. We're interested in how your emotional state shifts across uncertain situations.</p>
+  <div class="spacer"></div>
+  <div class="card">
+    <h3>What you'll do</h3>
+    <div class="spacer-sm"></div>
+    <p style="font-size:13px;">Rate your emotional state → Interpret the social cue → Write your reasoning → Choose how to respond → See what happens</p>
+    <div class="spacer-sm"></div>
+    <p style="font-size:13px;"><strong>Duration:</strong> 10–15 minutes &nbsp;·&nbsp; <strong>Scenes:</strong> 8–10</p>
+  </div>
+  <div class="spacer"></div>
+  <button class="btn btn-primary" onclick="showScreen('screen-onboarding')">Begin →</button>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SCREEN 1: Onboarding / Baseline
+══════════════════════════════════════════════════ -->
+<div id="screen-onboarding" class="screen">
+  <h3>Before we start</h3>
+  <h2>A few questions about you</h2>
+  <p>These help us understand your baseline. All data is anonymous.</p>
+  <div class="spacer"></div>
+
+  <div class="card">
+    <div class="trait-question">
+      <label>Age range</label>
+      <div class="options" id="age-options">
+        <button class="option" onclick="selectOption(this,'age','18-24')">18–24</button>
+        <button class="option" onclick="selectOption(this,'age','25-34')">25–34</button>
+        <button class="option" onclick="selectOption(this,'age','35-44')">35–44</button>
+        <button class="option" onclick="selectOption(this,'age','45+')">45 or older</button>
+      </div>
+    </div>
+
+    <div class="trait-question">
+      <label>Right now, how anxious do you feel?</label>
+      <div class="slider-wrap">
+        <div class="slider-labels"><span>Not at all</span><span>Extremely</span></div>
+        <input type="range" min="0" max="100" value="30" id="baseline-anxiety"
+               oninput="document.getElementById('ba-val').textContent=this.value">
+        <div class="slider-value" id="ba-val">30</div>
+      </div>
+    </div>
+
+    <div class="trait-question">
+      <label>I often worry about what others think of me</label>
+      <div class="options" id="social-worry-options">
+        <button class="option" onclick="selectOption(this,'socialWorry','1')">Strongly disagree</button>
+        <button class="option" onclick="selectOption(this,'socialWorry','2')">Disagree</button>
+        <button class="option" onclick="selectOption(this,'socialWorry','3')">Neutral</button>
+        <button class="option" onclick="selectOption(this,'socialWorry','4')">Agree</button>
+        <button class="option" onclick="selectOption(this,'socialWorry','5')">Strongly agree</button>
+      </div>
+    </div>
+
+    <div class="trait-question">
+      <label>Uncertainty makes me more anxious than clear bad news</label>
+      <div class="options" id="uncertainty-options">
+        <button class="option" onclick="selectOption(this,'uncertainty','1')">Strongly disagree</button>
+        <button class="option" onclick="selectOption(this,'uncertainty','2')">Disagree</button>
+        <button class="option" onclick="selectOption(this,'uncertainty','3')">Neutral</button>
+        <button class="option" onclick="selectOption(this,'uncertainty','4')">Agree</button>
+        <button class="option" onclick="selectOption(this,'uncertainty','5')">Strongly agree</button>
+      </div>
+    </div>
+
+    <div class="trait-question">
+      <label>How much sleep did you get last night?</label>
+      <div class="options" id="sleep-options">
+        <button class="option" onclick="selectOption(this,'sleep','<5')">Less than 5 hrs</button>
+        <button class="option" onclick="selectOption(this,'sleep','5-7')">5–7 hrs</button>
+        <button class="option" onclick="selectOption(this,'sleep','7-9')">7–9 hrs</button>
+        <button class="option" onclick="selectOption(this,'sleep','>9')">More than 9 hrs</button>
+      </div>
+    </div>
+
+    <div class="trait-question">
+      <label>How many scenes would you like to do?</label>
+      <div class="options" id="session-length-options">
+        <button class="option" onclick="selectOption(this,'sessionLength','3')">3 scenes (~5 min)</button>
+        <button class="option" onclick="selectOption(this,'sessionLength','5')">5 scenes (~10 min)</button>
+        <button class="option" onclick="selectOption(this,'sessionLength','7')">7 scenes (~14 min)</button>
+        <button class="option" onclick="selectOption(this,'sessionLength','9')">All 9 scenes (full session)</button>
+      </div>
+    </div>
+  </div>
+
+  <button class="btn btn-primary" onclick="startGame()" id="start-btn">Start the study →</button>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SCREEN 2: GAME — main scene loop
+══════════════════════════════════════════════════ -->
+<div id="screen-game" class="screen">
+  <div class="progress-bar">
+    <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+  </div>
+
+  <div class="scene-counter" id="scene-counter">Scene 1</div>
+  <div class="spacer-sm"></div>
+
+  <!-- Stage indicator dots -->
+  <div class="stage-dots" id="stage-dots">
+    <div class="stage-dot" title="Scene"></div>
+    <div class="stage-dot" title="Emotion rating"></div>
+    <div class="stage-dot" title="Interpretation"></div>
+    <div class="stage-dot" title="Free write"></div>
+    <div class="stage-dot" title="Forecast"></div>
+    <div class="stage-dot" title="Action"></div>
+    <div class="stage-dot" title="Outcome"></div>
+  </div>
+
+  <!-- STAGE A: Scene -->
+  <div id="stage-A" class="stage-panel">
+    <h3 id="scene-domain">Messaging</h3>
+    <div class="scene-card">
+      <p class="scene-text" id="scene-text"></p>
+    </div>
+    <p id="scene-subtext" style="font-size:13px;"></p>
+    <div class="nav-row">
+      <span></span>
+      <button class="btn btn-primary" onclick="nextStage()">How am I feeling? →</button>
+    </div>
+  </div>
+
+  <!-- STAGE B: Initial emotion rating -->
+  <div id="stage-B" class="stage-panel" style="display:none">
+    <h3>Emotional check-in</h3>
+    <h2>How anxious do you feel right now?</h2>
+    <div class="card">
+      <div class="slider-wrap">
+        <div class="slider-labels"><span>Calm</span><span>Extremely anxious</span></div>
+        <input type="range" min="0" max="100" value="50" id="initial-anxiety"
+               oninput="updateAnxietyColor(this.value,'ia-val')">
+        <div class="slider-value" id="ia-val">50</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:1rem;">
+      <h3 style="margin-bottom:0.75rem;">Current emotional weather</h3>
+      <div class="weather-grid">
+        <div class="weather-item"><div class="label">Anxiety</div><div class="val" id="wx-anxiety">—</div></div>
+        <div class="weather-item"><div class="label">Energy</div><div class="val" id="wx-energy">—</div></div>
+        <div class="weather-item"><div class="label">Confidence</div><div class="val" id="wx-confidence">—</div></div>
+        <div class="weather-item"><div class="label">Safety</div><div class="val" id="wx-safety">—</div></div>
+      </div>
+    </div>
+
+    <div class="nav-row">
+      <span></span>
+      <button class="btn btn-primary" onclick="saveInitialAnxiety()">What does this mean? →</button>
+    </div>
+  </div>
+
+  <!-- STAGE C: Interpretation -->
+  <div id="stage-C" class="stage-panel" style="display:none">
+    <h3>Interpretation</h3>
+    <h2>What do you think this signals?</h2>
+    <div class="scene-card" style="margin-bottom:1rem;">
+      <p class="scene-text" id="scene-text-c" style="font-size:0.95rem;"></p>
+    </div>
+
+    <div class="options" id="interpretation-options"></div>
+
+    <div class="spacer-sm"></div>
+    <div class="card">
+      <h3>How confident are you in this interpretation?</h3>
+      <div class="slider-wrap">
+        <div class="slider-labels"><span>Just guessing</span><span>Completely certain</span></div>
+        <input type="range" min="0" max="100" value="50" id="confidence-slider"
+               oninput="document.getElementById('conf-val').textContent=this.value">
+        <div class="slider-value" id="conf-val">50</div>
+      </div>
+    </div>
+
+    <div class="nav-row">
+      <span></span>
+      <button class="btn btn-primary" onclick="saveInterpretation()" id="interp-btn" disabled>Your reasoning →</button>
+    </div>
+  </div>
+
+  <!-- STAGE D: Free write -->
+  <div id="stage-D" class="stage-panel" style="display:none">
+    <h3>Your reasoning</h3>
+    <h2>Tell us what you think is happening</h2>
+    <p>Write in your own words. There is no right answer. We want to understand your thinking.</p>
+    <div class="spacer"></div>
+
+    <div class="card">
+      <label style="font-size:13px;font-weight:500;color:var(--ink2);display:block;margin-bottom:0.5rem;">
+        What do you think is actually going on in this situation?
+      </label>
+      <textarea id="freewrite-what" placeholder="e.g. I think they're busy but there's a part of me that wonders if I said something wrong..." rows="3"></textarea>
+    </div>
+
+    <div class="card">
+      <label style="font-size:13px;font-weight:500;color:var(--ink2);display:block;margin-bottom:0.5rem;">
+        Why do you think that? What are you basing this on?
+      </label>
+      <textarea id="freewrite-why" placeholder="e.g. The timing feels off, but also they've done this before and it usually means nothing..." rows="3"></textarea>
+    </div>
+
+    <div id="nlp-status" style="display:none;margin:1rem 0;">
+      <div class="card" style="text-align:center;padding:1rem;">
+        <p style="font-size:13px;color:var(--ink3);margin-bottom:0.5rem;">Analysing your response...</p>
+        <div class="loading-dots"><span></span><span></span><span></span></div>
+      </div>
+    </div>
+
+    <div class="nav-row">
+      <span></span>
+      <button class="btn btn-primary" onclick="saveFreewrite()" id="freewrite-btn">Predict your future →</button>
+    </div>
+  </div>
+
+  <!-- STAGE E: Forecast -->
+  <div id="stage-E" class="stage-panel" style="display:none">
+    <h3>Affective forecast</h3>
+    <h2>Predict how you'll feel</h2>
+    <p>Before choosing an action, predict the outcome on your anxiety.</p>
+    <div class="spacer"></div>
+
+    <div class="card">
+      <p style="font-size:13px;font-weight:500;color:var(--ink);margin-bottom:1rem;">
+        If you <strong>wait and do nothing</strong>, how anxious will you feel later?
+      </p>
+      <div class="slider-wrap">
+        <div class="slider-labels"><span>Calm</span><span>Very anxious</span></div>
+        <input type="range" min="0" max="100" value="50" id="forecast-wait"
+               oninput="document.getElementById('fw-val').textContent=this.value">
+        <div class="slider-value" id="fw-val">50</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <p style="font-size:13px;font-weight:500;color:var(--ink);margin-bottom:1rem;">
+        If you <strong>take action</strong> (ask, clarify, reach out), how anxious will you feel later?
+      </p>
+      <div class="slider-wrap">
+        <div class="slider-labels"><span>Calm</span><span>Very anxious</span></div>
+        <input type="range" min="0" max="100" value="50" id="forecast-act"
+               oninput="document.getElementById('fa-val').textContent=this.value">
+        <div class="slider-value" id="fa-val">50</div>
+      </div>
+    </div>
+
+    <div class="nav-row">
+      <span></span>
+      <button class="btn btn-primary" onclick="saveForecast()">Now choose what to do →</button>
+    </div>
+  </div>
+
+  <!-- STAGE F: Action choice -->
+  <div id="stage-F" class="stage-panel" style="display:none">
+    <h3>Behavioural choice</h3>
+    <h2>What do you do?</h2>
+    <div class="scene-card" style="margin-bottom:1.5rem;">
+      <p class="scene-text" id="scene-text-f" style="font-size:0.95rem;"></p>
+    </div>
+
+    <div class="options" id="action-options"></div>
+
+    <div class="nav-row">
+      <span></span>
+      <button class="btn btn-primary" onclick="saveAction()" id="action-btn" disabled>See what happens →</button>
+    </div>
+  </div>
+
+  <!-- STAGE G: Outcome + post-anxiety -->
+  <div id="stage-G" class="stage-panel" style="display:none">
+    <h3>Outcome</h3>
+    <h2 id="outcome-title">What happened</h2>
+
+    <div class="outcome-reveal" id="outcome-text-box">
+      <p id="outcome-text"></p>
+    </div>
+
+    <div class="spacer-sm"></div>
+    <h3>How anxious do you feel now?</h3>
+    <div class="card">
+      <div class="slider-wrap">
+        <div class="slider-labels"><span>Calm</span><span>Very anxious</span></div>
+        <input type="range" min="0" max="100" value="50" id="post-anxiety"
+               oninput="document.getElementById('pa-val').textContent=this.value">
+        <div class="slider-value" id="pa-val">50</div>
+      </div>
+    </div>
+
+    <!-- NLP comparison reveal -->
+    <div id="nlp-compare" style="display:none;">
+      <div class="spacer-sm"></div>
+      <div class="compare-grid">
+        <div class="compare-col">
+          <h3>Your language suggested</h3>
+          <div id="nlp-result-text" style="font-size:13px;color:var(--ink2);line-height:1.6;"></div>
+        </div>
+        <div class="compare-col">
+          <h3>You reported</h3>
+          <div id="nlp-result-self" style="font-size:13px;color:var(--ink2);line-height:1.6;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Weather update -->
+    <div class="spacer-sm"></div>
+    <div class="card">
+      <h3>Emotional weather update</h3>
+      <div class="weather-grid" id="outcome-weather"></div>
+    </div>
+
+    <div class="nav-row">
+      <span class="scene-counter" id="scenes-remaining"></span>
+      <button class="btn btn-primary" onclick="nextScene()" id="next-scene-btn">Next scene →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SCREEN 3: Summary / Results
+══════════════════════════════════════════════════ -->
+<div id="screen-summary" class="screen">
+  <h3>Study complete</h3>
+  <h2>Your emotional weather report</h2>
+  <p>Here is a summary of your emotional dynamics across the session.</p>
+  <div class="spacer"></div>
+
+  <div class="card">
+    <h3 style="margin-bottom:1rem;">Anxiety trajectory</h3>
+    <div class="mini-chart" id="summary-chart"></div>
+    <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--ink3);margin-top:6px;">
+      <span>Scene 1</span><span id="chart-end-label">Scene 9</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-bottom:1rem;">Behavioural profile</h3>
+    <div id="behaviour-profile"></div>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-bottom:1rem;">Interpretation patterns</h3>
+    <div id="interpretation-summary"></div>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-bottom:1rem;">Affective forecasting accuracy</h3>
+    <div id="forecast-summary"></div>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-bottom:1rem;">Implicit vs. explicit emotional awareness</h3>
+    <div id="nlp-awareness-summary"></div>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-bottom:1rem;">Session statistics</h3>
+    <div id="session-stats"></div>
+    <div class="data-note">
+      Your data has been recorded. You can download a copy below.
+    </div>
+  </div>
+
+  <div class="spacer"></div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;">
+    <button class="btn btn-primary" onclick="downloadData()">Download my data (JSON)</button>
+    <button class="btn btn-ghost" onclick="showScreen('screen-welcome');resetGame()">Start again</button>
+  </div>
+</div>
+
+</div><!-- /#app -->
+
+<script>
+/* ══════════════════════════════════════════════════
+   MODULE 1: SCENE DATA
+══════════════════════════════════════════════════ */
+const SCENES = [
+  {
+    id: 'msg_01',
+    domain: 'Messaging',
+    uncertainty: 'high',
+    text: 'You sent your close friend a long message about something that\'s been bothering you. They read it three hours ago. Their reply: "okay."',
+    subtext: 'The chat shows they\'ve been active since.',
+    interpretations: [
+      { label: 'They are upset or hurt by what you said', category: 'negative' },
+      { label: 'They are busy and gave a quick acknowledgment', category: 'neutral' },
+      { label: 'They are overwhelmed and need time to process', category: 'mixed' },
+      { label: 'They don\'t know what to say', category: 'neutral' },
+      { label: 'I genuinely cannot tell', category: 'uncertain' }
+    ],
+    actions: [
+      { label: 'Send a follow-up message asking if they\'re okay', category: 'reassurance' },
+      { label: 'Wait and give them space', category: 'avoidance' },
+      { label: 'Call them directly', category: 'approach' },
+      { label: 'Distract yourself and check later', category: 'avoidance' },
+      { label: 'Ask a mutual friend what\'s going on', category: 'reassurance' },
+      { label: 'Re-read your original message to find what upset them', category: 'rumination' }
+    ],
+    outcomes: {
+      reassurance: { text: 'They reply: "Sorry, I was in a meeting. That sounds really hard — let\'s talk tonight?" Your message mattered to them.', valence: 'positive', anxietyDelta: -18 },
+      avoidance: { text: 'Hours pass. They haven\'t texted. The silence feels louder. Eventually, they message about something unrelated.', valence: 'neutral', anxietyDelta: +8 },
+      approach: { text: 'They pick up, surprised. "Oh, I\'ve just been slammed — are you okay?" The conversation helps, but you feel slightly awkward for calling.', valence: 'positive', anxietyDelta: -12 },
+      rumination: { text: 'You re-read your words ten times. You find nothing obviously wrong. But the uncertainty has grown.', valence: 'negative', anxietyDelta: +14 }
+    }
+  },
+  {
+    id: 'eval_01',
+    domain: 'Evaluation',
+    uncertainty: 'high',
+    text: 'You submitted a report to your supervisor three days ago. Today, passing you in the corridor, they say: "I\'ve been looking at your work. We should find time to talk."',
+    subtext: 'They smiled, but it was brief. They walked away before you could respond.',
+    interpretations: [
+      { label: 'There is a serious problem with my work', category: 'negative' },
+      { label: 'They want to give feedback — could be good or bad', category: 'neutral' },
+      { label: 'They are pleased and want to discuss next steps', category: 'positive' },
+      { label: 'It is routine — they do this with everyone', category: 'neutral' },
+      { label: 'I genuinely cannot tell', category: 'uncertain' }
+    ],
+    actions: [
+      { label: 'Email them now to schedule a time', category: 'approach' },
+      { label: 'Wait for them to follow up', category: 'avoidance' },
+      { label: 'Ask a colleague if they\'ve heard anything', category: 'reassurance' },
+      { label: 'Review your report repeatedly for errors', category: 'rumination' },
+      { label: 'Start quietly revising the report just in case', category: 'rumination' },
+      { label: 'Try not to think about it and focus on other work', category: 'avoidance' }
+    ],
+    outcomes: {
+      approach: { text: 'They respond within the hour: "Great, let\'s do Thursday. Really interesting approach in section 3 — a few things to sharpen but overall strong."', valence: 'positive', anxietyDelta: -22 },
+      avoidance: { text: 'Two days pass. No message. You find yourself checking your email every hour.', valence: 'negative', anxietyDelta: +16 },
+      reassurance: { text: 'Your colleague shrugs: "No idea, they haven\'t mentioned it to me." Not helpful. Still uncertain.', valence: 'neutral', anxietyDelta: +4 },
+      rumination: { text: 'You find a minor inconsistency in a footnote. It probably doesn\'t matter. You\'re not sure. You fix it and feel briefly better, then worse.', valence: 'negative', anxietyDelta: +11 }
+    }
+  },
+  {
+    id: 'belong_01',
+    domain: 'Belonging',
+    uncertainty: 'medium',
+    text: 'In a group chat you\'ve been in for two years, people are planning a dinner. You suggest a date. Three people react with thumbs up. Nobody picks up your suggestion. The group settles on a different date — one you can\'t make.',
+    subtext: '',
+    interpretations: [
+      { label: 'They actively excluded me', category: 'negative' },
+      { label: 'The other date just worked better for most people', category: 'neutral' },
+      { label: 'Nobody noticed I can\'t make it', category: 'neutral' },
+      { label: 'The group is quietly drifting away from me', category: 'negative' },
+      { label: 'I genuinely cannot tell', category: 'uncertain' }
+    ],
+    actions: [
+      { label: 'Say "Ah, I can\'t make that date — have fun though!"', category: 'approach' },
+      { label: 'Leave the notification unread and say nothing', category: 'avoidance' },
+      { label: 'Message one person privately to check in', category: 'reassurance' },
+      { label: 'Mute the chat and tell yourself it doesn\'t matter', category: 'avoidance' },
+      { label: 'Suggest an alternative plan for another time', category: 'approach' },
+      { label: 'Replay the last few weeks for signs you\'re drifting apart', category: 'rumination' }
+    ],
+    outcomes: {
+      approach: { text: '"Oh no! We didn\'t realise — let\'s do a separate catch-up just with you." Two people pile in agreeing. The exclusion was accidental.', valence: 'positive', anxietyDelta: -20 },
+      avoidance: { text: 'The dinner happens. They post photos in the chat. You feel briefly invisible, then remind yourself it was just logistics.', valence: 'neutral', anxietyDelta: +6 },
+      reassurance: { text: 'They reply: "Oh no we didn\'t check! So sorry, we\'ll plan something with you too." Reassured, but slightly self-conscious for needing to ask.', valence: 'positive', anxietyDelta: -10 },
+      rumination: { text: 'You find a few moments where maybe you felt peripheral. The evidence is thin. You can\'t tell if you\'re seeing clearly or catastrophising.', valence: 'negative', anxietyDelta: +13 }
+    }
+  },
+  {
+    id: 'msg_02',
+    domain: 'Messaging',
+    uncertainty: 'medium',
+    text: 'You sent your advisor a draft chapter four days ago. Today they reply: "Let\'s discuss this on Friday."',
+    subtext: 'No other context. No reaction to the content.',
+    interpretations: [
+      { label: 'The draft is in serious trouble', category: 'negative' },
+      { label: 'They are busy and filed it for later', category: 'neutral' },
+      { label: 'They are engaged and want to give it proper attention', category: 'positive' },
+      { label: 'This is just their standard style', category: 'neutral' },
+      { label: 'I genuinely cannot tell', category: 'uncertain' }
+    ],
+    actions: [
+      { label: 'Reply to confirm Friday and ask if there\'s anything to prepare', category: 'approach' },
+      { label: 'Just reply "Sounds good" and wait', category: 'avoidance' },
+      { label: 'Message a labmate asking if they\'ve had similar feedback styles', category: 'reassurance' },
+      { label: 'Spend the next three days rewriting sections preemptively', category: 'rumination' },
+      { label: 'Re-read the chapter daily looking for major flaws', category: 'rumination' },
+      { label: 'Confirm and then try to put it out of your mind until Friday', category: 'avoidance' }
+    ],
+    outcomes: {
+      approach: { text: '"Nothing specific to prepare — I just prefer talking through chapters. Good structure, by the way." The week feels lighter.', valence: 'positive', anxietyDelta: -19 },
+      avoidance: { text: 'The days drag. You imagine the conversation going badly in several different ways.', valence: 'negative', anxietyDelta: +15 },
+      reassurance: { text: '"Oh they always do that — it means nothing. Friday will be fine." Slightly more settled, but the uncertainty is still there.', valence: 'neutral', anxietyDelta: -5 },
+      rumination: { text: 'You\'ve now rewritten the introduction twice. Friday arrives and the advisor says it\'s broadly fine. You feel relieved and vaguely exhausted.', valence: 'neutral', anxietyDelta: +7 }
+    }
+  },
+  {
+    id: 'eval_02',
+    domain: 'Evaluation',
+    uncertainty: 'low',
+    text: 'You gave a short presentation in a team meeting. Afterwards, a senior colleague says quietly: "Good job today." They seem sincere.',
+    subtext: 'The others have already left the room.',
+    interpretations: [
+      { label: 'It\'s a genuine compliment — they mean it', category: 'positive' },
+      { label: 'It\'s polite but they have reservations', category: 'negative' },
+      { label: 'They say this to everyone to be encouraging', category: 'neutral' },
+      { label: 'They particularly noticed something I did well', category: 'positive' },
+      { label: 'I genuinely cannot tell', category: 'uncertain' }
+    ],
+    actions: [
+      { label: 'Say thank you and mention something you found challenging', category: 'approach' },
+      { label: 'Say thank you and move on quickly', category: 'avoidance' },
+      { label: 'Ask: "Was there anything you\'d have changed?"', category: 'approach' },
+      { label: 'Internally dismiss the compliment as politeness', category: 'rumination' },
+      { label: 'Feel momentarily good but then doubt it', category: 'rumination' }
+    ],
+    outcomes: {
+      approach: { text: '"Honestly, the clarity of your structure. It made it very easy to follow." The compliment feels real now.', valence: 'positive', anxietyDelta: -14 },
+      avoidance: { text: 'You nod and leave. Within twenty minutes you\'re wondering if they really meant it.', valence: 'neutral', anxietyDelta: +5 },
+      rumination: { text: 'You spend the afternoon cycling between mild pride and doubt. By evening you\'ve half-convinced yourself it was just politeness.', valence: 'negative', anxietyDelta: +9 }
+    }
+  },
+  {
+    id: 'belong_02',
+    domain: 'Belonging',
+    uncertainty: 'high',
+    text: 'A friend you haven\'t seen in a while posts a photo of a gathering. You\'re not in it. You were not invited. You recognise two people there — mutual friends.',
+    subtext: '',
+    interpretations: [
+      { label: 'It was a small casual thing and I\'m reading too much into it', category: 'neutral' },
+      { label: 'They are slowly pulling away from me', category: 'negative' },
+      { label: 'I did something to cause this without realising', category: 'negative' },
+      { label: 'This has nothing to do with me — it was just a coincidence', category: 'neutral' },
+      { label: 'I genuinely cannot tell', category: 'uncertain' }
+    ],
+    actions: [
+      { label: 'Like the photo and message the friend to catch up', category: 'approach' },
+      { label: 'Scroll past and say nothing', category: 'avoidance' },
+      { label: 'Message one of the mutual friends asking if everything is okay', category: 'reassurance' },
+      { label: 'Go quiet on social media for a while', category: 'avoidance' },
+      { label: 'Think back over the last month for what might have gone wrong', category: 'rumination' }
+    ],
+    outcomes: {
+      approach: { text: 'They reply enthusiastically. "Oh my god, yes — we\'ve been terrible at keeping in touch. Are you free next week?" Turns out it was a spontaneous work thing.', valence: 'positive', anxietyDelta: -21 },
+      avoidance: { text: 'You don\'t say anything. The question lingers for days. Nothing is resolved.', valence: 'negative', anxietyDelta: +12 },
+      reassurance: { text: 'Your mutual friend: "Oh that was just a thing for [colleague\'s] birthday — last minute." You feel foolish for worrying, but also relieved.', valence: 'positive', anxietyDelta: -9 },
+      rumination: { text: 'You trace the friendship backwards. There were a couple of unreturned messages a few months ago. Or were there? You\'re not sure anymore.', valence: 'negative', anxietyDelta: +17 }
+    }
+  },
+  {
+    id: 'msg_03',
+    domain: 'Messaging',
+    uncertainty: 'high',
+    text: 'You are in a group project chat. You sent a message with a specific idea two hours ago. The group has continued chatting — but nobody has acknowledged your message.',
+    subtext: 'Seven messages have appeared since yours.',
+    interpretations: [
+      { label: 'My idea was overlooked — it happens in busy chats', category: 'neutral' },
+      { label: 'My idea was not good and people are avoiding saying so', category: 'negative' },
+      { label: 'The conversation moved on by coincidence', category: 'neutral' },
+      { label: 'People do not value my input in this group', category: 'negative' },
+      { label: 'I genuinely cannot tell', category: 'uncertain' }
+    ],
+    actions: [
+      { label: 'Gently repost the idea: "Coming back to this — thoughts?"', category: 'approach' },
+      { label: 'Leave it and contribute to the current conversation instead', category: 'avoidance' },
+      { label: 'Message one person privately to ask what they thought', category: 'reassurance' },
+      { label: 'Go quiet for the rest of the project session', category: 'avoidance' },
+      { label: 'Write a longer, more detailed version of the idea to make it harder to ignore', category: 'rumination' }
+    ],
+    outcomes: {
+      approach: { text: '"Oh yes — I actually think that could work really well. Sorry it got buried." Two others agree. The idea is adopted.', valence: 'positive', anxietyDelta: -18 },
+      avoidance: { text: 'The session ends. Your idea was never discussed. You\'re not sure if it mattered.', valence: 'negative', anxietyDelta: +9 },
+      reassurance: { text: '"I saw it — I think it\'s good but the others are stuck on the other approach. Bring it up properly next meeting."', valence: 'neutral', anxietyDelta: -6 },
+      rumination: { text: 'Your long follow-up message also goes unacknowledged. The silence now feels louder than before.', valence: 'negative', anxietyDelta: +16 }
+    }
+  },
+  {
+    id: 'eval_03',
+    domain: 'Evaluation',
+    uncertainty: 'medium',
+    text: 'You ask your manager for feedback on a project. They say: "I\'ll give you proper feedback once I\'ve had a chance to sit with it. Nothing urgent."',
+    subtext: 'This is the second time you\'ve asked.',
+    interpretations: [
+      { label: 'They are avoiding giving me bad news', category: 'negative' },
+      { label: 'They are genuinely busy and haven\'t had a chance', category: 'neutral' },
+      { label: 'They don\'t think feedback is necessary — it was fine', category: 'positive' },
+      { label: 'The "nothing urgent" means something went wrong but it\'s minor', category: 'mixed' },
+      { label: 'I genuinely cannot tell', category: 'uncertain' }
+    ],
+    actions: [
+      { label: 'Say "No rush — just let me know" and move on', category: 'avoidance' },
+      { label: 'Ask directly: "Can you give me a quick sense of whether it landed okay?"', category: 'approach' },
+      { label: 'Ask a peer who knows your manager well what this usually means', category: 'reassurance' },
+      { label: 'Start drafting improvements to the project preemptively', category: 'rumination' },
+      { label: 'Check if anyone else got feedback from this manager recently', category: 'reassurance' }
+    ],
+    outcomes: {
+      approach: { text: '"Yes, honestly — strong overall. The timeline section needs work but it\'s fixable." Direct information. The relief is immediate.', valence: 'positive', anxietyDelta: -16 },
+      avoidance: { text: 'Another week passes. Still no feedback. The project is moving forward anyway, which helps a little.', valence: 'neutral', anxietyDelta: +7 },
+      reassurance: { text: '"They always do this — just sit on it for ages. Don\'t read into it." Mildly comforting but not enough.', valence: 'neutral', anxietyDelta: -4 },
+      rumination: { text: 'Your preemptive improvements take all weekend. The feedback, when it comes, doesn\'t mention the sections you rewrote.', valence: 'neutral', anxietyDelta: +10 }
+    }
+  },
+  {
+    id: 'belong_03',
+    domain: 'Belonging',
+    uncertainty: 'medium',
+    text: 'You make a joke in a group conversation. There is a brief pause. One person laughs. The others change the subject.',
+    subtext: 'The conversation continues warmly, but nobody returns to what you said.',
+    interpretations: [
+      { label: 'The joke didn\'t land and everyone is politely moving on', category: 'negative' },
+      { label: 'The joke was fine — it just wasn\'t the focus right now', category: 'neutral' },
+      { label: 'One person laughed, which means it landed for them', category: 'positive' },
+      { label: 'People found it awkward', category: 'negative' },
+      { label: 'I genuinely cannot tell', category: 'uncertain' }
+    ],
+    actions: [
+      { label: 'Laugh it off internally and keep engaging warmly', category: 'approach' },
+      { label: 'Go quieter for the rest of the conversation', category: 'avoidance' },
+      { label: 'Try another comment to re-establish your presence', category: 'approach' },
+      { label: 'Replay the moment in your head to figure out what went wrong', category: 'rumination' },
+      { label: 'Over-explain or clarify the joke', category: 'reassurance' }
+    ],
+    outcomes: {
+      approach: { text: 'The conversation continues. You contribute two more times and both land well. The earlier moment dissolves into the general rhythm of the group.', valence: 'positive', anxietyDelta: -13 },
+      avoidance: { text: 'You stay quieter. The group doesn\'t seem to notice. You feel a low-grade discomfort that doesn\'t quite go away.', valence: 'neutral', anxietyDelta: +8 },
+      rumination: { text: 'You spend the journey home rewinding the six seconds. You still can\'t tell. Eventually you let it go but the texture of the moment stays with you.', valence: 'negative', anxietyDelta: +11 },
+      reassurance: { text: 'The explanation makes the moment awkward in a new way. The other person says "No no, I get it!" in a way that suggests they didn\'t.', valence: 'negative', anxietyDelta: +6 }
+    }
+  }
+];
+
+/* ══════════════════════════════════════════════════
+   MODULE 2: GAME STATE
+══════════════════════════════════════════════════ */
+let state = {
+  participantData: {},
+  currentSceneIndex: 0,
+  currentStage: 'A',
+  trials: [],
+  currentTrial: {},
+  weather: { anxiety: 40, energy: 60, confidence: 55, safety: 65 },
+  nlpResults: []
+};
+
+function resetGame() {
+  state = {
+    participantData: {},
+    currentSceneIndex: 0,
+    currentStage: 'A',
+    trials: [],
+    currentTrial: {},
+    weather: { anxiety: 40, energy: 60, confidence: 55, safety: 65 },
+    nlpResults: [],
+    activeScenes: SCENES
+  };
+}
+
+/* ══════════════════════════════════════════════════
+   MODULE 3: NAVIGATION
+══════════════════════════════════════════════════ */
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const target = document.getElementById(id);
+  void target.offsetWidth;
+  target.classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+function showStage(stageId) {
+  document.querySelectorAll('.stage-panel').forEach(p => p.style.display = 'none');
+  document.getElementById('stage-' + stageId).style.display = 'block';
+  window.scrollTo(0, 0);
+  updateStageDots(stageId);
+}
+
+function updateStageDots(current) {
+  const order = ['A','B','C','D','E','F','G'];
+  const dots = document.querySelectorAll('.stage-dot');
+  const ci = order.indexOf(current);
+  dots.forEach((d, i) => {
+    d.className = 'stage-dot';
+    if (i < ci) d.classList.add('done');
+    else if (i === ci) d.classList.add('active');
+  });
+}
+
+function nextStage() {
+  const order = ['A','B','C','D','E','F','G'];
+  const ci = order.indexOf(state.currentStage);
+  state.currentStage = order[ci + 1];
+  showStage(state.currentStage);
+}
+
+/* ══════════════════════════════════════════════════
+   MODULE 4: ONBOARDING
+══════════════════════════════════════════════════ */
+const selected = {};
+
+function selectOption(el, key, val) {
+  const parent = el.closest('.options');
+  parent.querySelectorAll('.option').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  selected[key] = val;
+}
+
+function startGame() {
+  const sessionLength = Math.min(SCENES.length, parseInt(selected.sessionLength) || SCENES.length);
+  state.participantData = {
+    age: selected.age || 'not stated',
+    baselineAnxiety: parseInt(document.getElementById('baseline-anxiety').value),
+    socialWorry: selected.socialWorry || '3',
+    uncertainty: selected.uncertainty || '3',
+    sleep: selected.sleep || 'not stated',
+    sessionLength: sessionLength,
+    startTime: new Date().toISOString()
+  };
+
+  // Pick a random subset of scenes for this session (preserves order so domains stay coherent)
+  const indices = [...SCENES.keys()];
+  for (let i = indices.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [indices[i], indices[j]] = [indices[j], indices[i]];
+  }
+  const picked = indices.slice(0, sessionLength).sort((a, b) => a - b);
+  state.activeScenes = picked.map(i => SCENES[i]);
+
+  state.weather.anxiety = state.participantData.baselineAnxiety;
+  loadScene(0);
+  showScreen('screen-game');
+}
+
+/* ══════════════════════════════════════════════════
+   MODULE 5: SCENE LOADING
+══════════════════════════════════════════════════ */
+function loadScene(index) {
+  const scene = state.activeScenes[index];
+  state.currentTrial = {
+    scene_id: scene.id,
+    domain: scene.domain,
+    uncertainty_level: scene.uncertainty,
+    scene_index: index,
+    startTime: Date.now()
+  };
+
+  const total = state.activeScenes.length;
+  document.getElementById('scene-counter').textContent = `Scene ${index + 1} of ${total}`;
+  document.getElementById('progress-fill').style.width = `${(index / total) * 100}%`;
+  document.getElementById('scene-domain').textContent = scene.domain.toUpperCase();
+  document.getElementById('scene-text').textContent = scene.text;
+  document.getElementById('scene-text-c').textContent = scene.text;
+  document.getElementById('scene-text-f').textContent = scene.text;
+  document.getElementById('scene-subtext').textContent = scene.subtext;
+
+  // Load interpretation options
+  const iOpts = document.getElementById('interpretation-options');
+  iOpts.innerHTML = '';
+  scene.interpretations.forEach((interp, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'option';
+    btn.textContent = interp.label;
+    btn.onclick = () => {
+      iOpts.querySelectorAll('.option').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      state.currentTrial.interpretation = interp.label;
+      state.currentTrial.interpretationCategory = interp.category;
+      document.getElementById('interp-btn').disabled = false;
+    };
+    iOpts.appendChild(btn);
+  });
+  document.getElementById('interp-btn').disabled = true;
+
+  // Load action options
+  const aOpts = document.getElementById('action-options');
+  aOpts.innerHTML = '';
+  scene.actions.forEach(action => {
+    const btn = document.createElement('button');
+    btn.className = 'option';
+    btn.textContent = action.label;
+    btn.onclick = () => {
+      aOpts.querySelectorAll('.option').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      state.currentTrial.action = action.label;
+      state.currentTrial.actionCategory = action.category;
+      document.getElementById('action-btn').disabled = false;
+    };
+    aOpts.appendChild(btn);
+  });
+  document.getElementById('action-btn').disabled = true;
+
+  // Update weather display
+  updateWeatherDisplay();
+
+  state.currentStage = 'A';
+  showStage('A');
+}
+
+function updateWeatherDisplay() {
+  document.getElementById('wx-anxiety').textContent = Math.round(state.weather.anxiety);
+  document.getElementById('wx-energy').textContent = Math.round(state.weather.energy);
+  document.getElementById('wx-confidence').textContent = Math.round(state.weather.confidence);
+  document.getElementById('wx-safety').textContent = Math.round(state.weather.safety);
+}
+
+/* ══════════════════════════════════════════════════
+   MODULE 6: STAGE HANDLERS
+══════════════════════════════════════════════════ */
+function saveInitialAnxiety() {
+  const val = parseInt(document.getElementById('initial-anxiety').value);
+  state.currentTrial.initial_anxiety = val;
+  state.currentTrial.reactionTime = Date.now() - state.currentTrial.startTime;
+  nextStage();
+}
+
+function saveInterpretation() {
+  state.currentTrial.confidence = parseInt(document.getElementById('confidence-slider').value);
+  nextStage();
+}
+
+function saveFreewrite() {
+  const what = document.getElementById('freewrite-what').value.trim();
+  const why = document.getElementById('freewrite-why').value.trim();
+
+  if (!what && !why) {
+    alert('Please write at least a few words in one of the fields.');
+    return;
+  }
+
+  state.currentTrial.freewrite_what = what;
+  state.currentTrial.freewrite_why = why;
+  state.currentTrial.freewrite_length = what.length + why.length;
+
+  // Call NLP analysis
+  analyzeWithNLP(what, why);
+  nextStage();
+}
+
+function saveForecast() {
+  state.currentTrial.forecast_wait = parseInt(document.getElementById('forecast-wait').value);
+  state.currentTrial.forecast_act = parseInt(document.getElementById('forecast-act').value);
+  nextStage();
+}
+
+function saveAction() {
+  const scene = state.activeScenes[state.currentSceneIndex];
+  const actionCat = state.currentTrial.actionCategory;
+
+  // Find matching outcome
+  let outcome = scene.outcomes[actionCat];
+  if (!outcome) {
+    const keys = Object.keys(scene.outcomes);
+    outcome = scene.outcomes[keys[0]];
+  }
+
+  state.currentTrial.outcome = outcome;
+  document.getElementById('outcome-text').textContent = outcome.text;
+
+  // Show NLP comparison if ready
+  showNLPComparison();
+
+  showStage('G');
+  state.currentStage = 'G';
+
+  const remaining = state.activeScenes.length - state.currentSceneIndex - 1;
+  document.getElementById('scenes-remaining').textContent =
+    remaining > 0 ? `${remaining} scene${remaining !== 1 ? 's' : ''} remaining` : 'Last scene';
+  document.getElementById('next-scene-btn').textContent =
+    remaining > 0 ? 'Next scene →' : 'See my results →';
+}
+
+function showNLPComparison() {
+  const nlpResult = state.nlpResults[state.nlpResults.length - 1];
+  if (!nlpResult) return;
+
+  document.getElementById('nlp-compare').style.display = 'block';
+
+  const selfAnxiety = state.currentTrial.initial_anxiety;
+  const nlpAnxiety = nlpResult.anxiety;
+  const diff = nlpAnxiety - selfAnxiety;
+  let diffNote = '';
+  if (Math.abs(diff) < 8) diffNote = 'Your language and rating were closely aligned.';
+  else if (diff > 0) diffNote = `Your language suggested ~${Math.round(diff)} points more anxiety than you reported.`;
+  else diffNote = `You reported ~${Math.round(Math.abs(diff))} points more anxiety than your language suggested.`;
+
+  document.getElementById('nlp-result-text').innerHTML =
+    `Anxiety: <strong>${Math.round(nlpAnxiety)}/100</strong><br>` +
+    `Confidence: <strong>${Math.round(nlpResult.confidence)}/100</strong><br>` +
+    `Rumination: <strong>${nlpResult.rumination ? 'Detected' : 'Low'}</strong>`;
+
+  document.getElementById('nlp-result-self').innerHTML =
+    `Anxiety: <strong>${selfAnxiety}/100</strong><br>` +
+    `Confidence: <strong>${state.currentTrial.confidence}/100</strong><br>` +
+    `<br><em style="font-size:12px;color:var(--ink3);">${diffNote}</em>`;
+}
+
+/* ══════════════════════════════════════════════════
+   MODULE 7: NLP ANALYSIS (Gemini API)
+══════════════════════════════════════════════════ */
+async function analyzeWithNLP(what, why) {
+  const prompt = `You are analyzing a short free-write from someone reflecting on a social situation. Rate the emotional content of their writing on the following dimensions and return ONLY a JSON object (no prose, no markdown fences) with these exact keys:
+
+{
+  "anxiety": <integer 0-100, how much anxiety/worry their language conveys>,
+  "confidence": <integer 0-100, how much self-assurance their language conveys>,
+  "rumination": <boolean, true if writing shows repetitive worry-loops or catastrophising>
+}
+
+Their writing:
+What's going on: "${what}"
+Why it matters / what they're thinking: "${why}"
+
+Return only the JSON object.`;
+
+  try {
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=AIzaSyDjNp-4Zy1YjCPYCiyzc0L9ZTzqXLL3DQo`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }]
+        })
+      }
+    );
+    const data = await response.json();
+    const text = data.candidates[0].content.parts[0].text;
+    const parsed = JSON.parse(text.replace(/```json|```/g, '').trim());
+    parsed.scene_id = state.currentTrial.scene_id;
+    parsed.scene_index = state.currentSceneIndex;
+    state.nlpResults.push(parsed);
+    state.currentTrial.nlp = parsed;
+  } catch (e) {
+    console.error('NLP analysis failed:', e);
+    state.nlpResults.push({
+      anxiety: null,
+      confidence: null,
+      scene_id: state.currentTrial.scene_id,
+      scene_index: state.currentSceneIndex,
+      error: true
+    });
+  }
+}
+/* ══════════════════════════════════════════════════
+   MODULE 8: WEATHER UPDATE + OUTCOME
+══════════════════════════════════════════════════ */
+function updateAnxietyColor(val, elId) {
+  const el = document.getElementById(elId);
+  el.textContent = val;
+  const v = parseInt(val);
+  el.style.color = v > 70 ? 'var(--warm)' : v < 30 ? 'var(--green)' : 'var(--accent)';
+}
+
+function nextScene() {
+  // Save current trial
+  const outcome = state.currentTrial.outcome;
+  const postAnxiety = parseInt(document.getElementById('post-anxiety').value);
+  const initAnxiety = state.currentTrial.initial_anxiety || state.weather.anxiety;
+
+  state.currentTrial.post_anxiety = postAnxiety;
+  state.currentTrial.prediction_error_wait = postAnxiety - (state.currentTrial.forecast_wait || postAnxiety);
+  state.currentTrial.prediction_error_act = postAnxiety - (state.currentTrial.forecast_act || postAnxiety);
+  state.currentTrial.emotional_volatility = Math.abs(postAnxiety - initAnxiety);
+  state.currentTrial.recovery = initAnxiety - postAnxiety;
+
+  // Update weather
+  const delta = outcome ? outcome.anxietyDelta : 0;
+  state.weather.anxiety = Math.min(100, Math.max(0, state.weather.anxiety + delta));
+
+  const actionCat = state.currentTrial.actionCategory;
+  if (actionCat === 'approach') {
+    state.weather.confidence = Math.min(100, state.weather.confidence + 5);
+    state.weather.safety = Math.min(100, state.weather.safety + 4);
+  } else if (actionCat === 'avoidance') {
+    state.weather.energy = Math.max(0, state.weather.energy - 4);
+    state.weather.confidence = Math.max(0, state.weather.confidence - 3);
+  } else if (actionCat === 'rumination') {
+    state.weather.energy = Math.max(0, state.weather.energy - 8);
+    state.weather.anxiety = Math.min(100, state.weather.anxiety + 5);
+  }
+
+  // Show outcome weather
+  renderOutcomeWeather(delta, actionCat);
+  state.trials.push({ ...state.currentTrial });
+
+  // Move to next scene or summary
+  setTimeout(() => {
+    state.currentSceneIndex++;
+    if (state.currentSceneIndex >= state.activeScenes.length) {
+      buildSummary();
+      showScreen('screen-summary');
+    } else {
+      loadScene(state.currentSceneIndex);
+    }
+  }, 200);
+}
+
+function renderOutcomeWeather(anxietyDelta, actionCat) {
+  const items = [
+    { label: 'Anxiety', val: Math.round(state.weather.anxiety), delta: anxietyDelta },
+    { label: 'Confidence', val: Math.round(state.weather.confidence), delta: actionCat === 'approach' ? 5 : actionCat === 'rumination' ? -4 : -2 },
+    { label: 'Energy', val: Math.round(state.weather.energy), delta: actionCat === 'rumination' ? -8 : actionCat === 'avoidance' ? -4 : 2 },
+    { label: 'Safety', val: Math.round(state.weather.safety), delta: actionCat === 'approach' ? 4 : -2 }
+  ];
+
+  const grid = document.getElementById('outcome-weather');
+  grid.innerHTML = items.map(item => {
+    const cls = item.delta > 0 ? 'up' : item.delta < 0 ? 'down' : 'neutral';
+    const sign = item.delta > 0 ? '+' : '';
+    return `<div class="weather-item">
+      <div class="label">${item.label}</div>
+      <div class="val">${item.val}</div>
+      <div class="change ${cls}">${sign}${item.delta}</div>
+    </div>`;
+  }).join('');
+}
+
+/* ══════════════════════════════════════════════════
+   MODULE 9: SUMMARY GENERATION
+══════════════════════════════════════════════════ */
+function buildSummary() {
+  document.getElementById('chart-end-label').textContent = `Scene ${state.activeScenes.length}`;
+
+  // Anxiety trajectory chart
+  const chart = document.getElementById('summary-chart');
+  const anxieties = state.trials.map(t => t.post_anxiety || 50);
+  const max = Math.max(...anxieties, 1);
+  chart.innerHTML = anxieties.map((a, i) => {
+    const h = Math.round((a / 100) * 76);
+    const isCurrent = i === anxieties.length - 1;
+    return `<div class="chart-bar ${isCurrent ? 'current' : ''}" style="height:${h}px" title="Scene ${i+1}: ${a}"></div>`;
+  }).join('');
+
+  // Behaviour profile
+  const cats = { approach: 0, avoidance: 0, reassurance: 0, rumination: 0 };
+  state.trials.forEach(t => { if (t.actionCategory && cats[t.actionCategory] !== undefined) cats[t.actionCategory]++; });
+  const total = state.trials.length;
+  const bp = document.getElementById('behaviour-profile');
+  bp.innerHTML = Object.entries(cats).map(([cat, count]) => {
+    const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+    const badgeClass = cat === 'approach' ? 'badge-cool' : cat === 'rumination' ? 'badge-warm' : 'badge-neutral';
+    return `<div class="summary-stat">
+      <span class="key">${cat.charAt(0).toUpperCase() + cat.slice(1)}</span>
+      <span class="val"><span class="badge ${badgeClass}">${count}×</span> &nbsp; ${pct}%</span>
+    </div>`;
+  }).join('');
+
+  // Interpretation patterns
+  const interpCats = { negative: 0, neutral: 0, positive: 0, mixed: 0, uncertain: 0 };
+  state.trials.forEach(t => { if (t.interpretationCategory) interpCats[t.interpretationCategory] = (interpCats[t.interpretationCategory] || 0) + 1; });
+  const mostCommon = Object.entries(interpCats).sort((a,b) => b[1]-a[1])[0];
+  const avgConf = state.trials.length > 0
+    ? Math.round(state.trials.reduce((s,t) => s + (t.confidence || 50), 0) / state.trials.length)
+    : 50;
+
+  const is = document.getElementById('interpretation-summary');
+  is.innerHTML = Object.entries(interpCats).filter(([,v]) => v > 0).map(([cat, count]) => {
+    return `<div class="summary-stat"><span class="key">${cat}</span><span class="val">${count} scene${count!==1?'s':''}</span></div>`;
+  }).join('') +
+  `<div class="summary-stat"><span class="key">Average confidence</span><span class="val">${avgConf}/100</span></div>`;
+
+  if (mostCommon && mostCommon[1] > 0) {
+    const bias = mostCommon[0] === 'negative'
+      ? 'You showed a tendency toward negative interpretation of ambiguous cues.'
+      : mostCommon[0] === 'neutral'
+      ? 'You tended toward neutral or balanced interpretations.'
+      : 'Your interpretations were varied across scenes.';
+    is.innerHTML += `<p style="font-size:12px;color:var(--ink3);margin-top:0.75rem;font-style:italic;">${bias}</p>`;
+  }
+
+  // Forecast accuracy
+  const errors = state.trials.filter(t => t.prediction_error_act !== undefined).map(t => t.prediction_error_act);
+  const avgError = errors.length > 0 ? Math.round(errors.reduce((a,b) => a+b,0) / errors.length) : 0;
+  const fs = document.getElementById('forecast-summary');
+  fs.innerHTML = `<div class="summary-stat"><span class="key">Average forecasting error</span><span class="val">${avgError > 0 ? '+' : ''}${avgError}</span></div>`;
+  fs.innerHTML += `<p style="font-size:12px;color:var(--ink3);margin-top:0.75rem;font-style:italic;">` +
+    (Math.abs(avgError) < 8 ? 'Your predictions were reasonably calibrated.' :
+     avgError > 0 ? 'You tended to underestimate how anxious you\'d feel after taking action.' :
+     'You tended to overestimate the emotional cost of taking action — a common pattern.') + `</p>`;
+
+  // NLP awareness
+  const nlpDiffs = state.trials.filter(t => t.nlp && t.nlp.anxiety !== null && t.initial_anxiety !== undefined)
+    .map(t => ({ diff: t.nlp.anxiety - t.initial_anxiety, scene: t.scene_id }));
+
+  const aws = document.getElementById('nlp-awareness-summary');
+  if (nlpDiffs.length > 0) {
+    const avgDiff = Math.round(nlpDiffs.reduce((s,d) => s+d.diff, 0) / nlpDiffs.length);
+    const ruminationCount = state.trials.filter(t => t.nlp && t.nlp.rumination).length;
+    aws.innerHTML = `<div class="summary-stat"><span class="key">Average implicit–explicit gap</span><span class="val">${avgDiff > 0 ? '+' : ''}${avgDiff} pts</span></div>
+    <div class="summary-stat"><span class="key">Scenes with detected rumination</span><span class="val">${ruminationCount} of ${nlpDiffs.length}</span></div>`;
+    aws.innerHTML += `<p style="font-size:12px;color:var(--ink3);margin-top:0.75rem;font-style:italic;">` +
+      (Math.abs(avgDiff) < 8 ? 'Your language and self-reports were closely aligned across scenes.' :
+       avgDiff > 0 ? 'Your language consistently carried more anxiety than your ratings suggested — a sign of possible suppression or limited emotional awareness.' :
+       'Your self-reports showed higher anxiety than your language suggested — you may have been more internally focused on feelings than your words expressed.') + `</p>`;
+  } else {
+    aws.innerHTML = `<p style="font-size:13px;color:var(--ink3);">Implicit analysis data is being processed.</p>`;
+  }
+
+  // Session stats
+  const ss = document.getElementById('session-stats');
+  const startTime = new Date(state.participantData.startTime);
+  const duration = Math.round((Date.now() - startTime.getTime()) / 60000);
+  const avgAnxiety = state.trials.length > 0
+    ? Math.round(state.trials.reduce((s,t) => s + (t.post_anxiety || 0), 0) / state.trials.length)
+    : 0;
+  const volatility = state.trials.length > 0
+    ? Math.round(state.trials.reduce((s,t) => s + (t.emotional_volatility || 0), 0) / state.trials.length)
+    : 0;
+  ss.innerHTML = `
+    <div class="summary-stat"><span class="key">Scenes completed</span><span class="val">${state.trials.length}</span></div>
+    <div class="summary-stat"><span class="key">Session duration</span><span class="val">~${duration} min</span></div>
+    <div class="summary-stat"><span class="key">Average anxiety across scenes</span><span class="val">${avgAnxiety}/100</span></div>
+    <div class="summary-stat"><span class="key">Average emotional volatility</span><span class="val">${volatility} pts</span></div>
+    <div class="summary-stat"><span class="key">Baseline anxiety</span><span class="val">${state.participantData.baselineAnxiety}/100</span></div>
+  `;
+}
+
+/* ══════════════════════════════════════════════════
+   MODULE 10: DATA EXPORT
+══════════════════════════════════════════════════ */
+function downloadData() {
+  const exportData = {
+    participant: state.participantData,
+    weather_final: state.weather,
+    trials: state.trials,
+    nlp_results: state.nlpResults,
+    summary: {
+      scenes_completed: state.trials.length,
+      avg_anxiety: state.trials.length > 0
+        ? Math.round(state.trials.reduce((s,t) => s + (t.post_anxiety || 0), 0) / state.trials.length)
+        : 0
+    },
+    exported_at: new Date().toISOString()
+  };
+
+  const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `social_weather_${Date.now()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+</script>
+</body>
+</html>
